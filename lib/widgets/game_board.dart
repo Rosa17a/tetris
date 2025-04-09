@@ -76,30 +76,28 @@ class GameBoard extends StatelessWidget {
                     final row = index ~/ 10;
                     final col = index % 10;
                     final isFilled = grid[row][col] == 1;
-                    final shouldShowShading =
-                        isFilled && !isFlashing && gridPieces[row][col] != null;
                     final isFlashingRow =
                         flashingLines.contains(row) && isFlashing;
                     final pieceType = gridPieces[row][col];
 
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: isFilled
-                            ? isFlashingRow
-                                ? Colors.white
-                                : pieceType?.getColor(level) ?? Colors.blue
-                            : Colors.black,
-                        border: shouldShowShading
-                            ? null
-                            : Border.all(
-                                color: const Color(0xFF111111),
-                                width: 1,
-                              ),
-                      ),
-                      child: shouldShowShading
-                          ? PieceShading(pieceType: pieceType!)
-                          : null,
-                    );
+                    if (isFilled && pieceType != null) {
+                      return PieceShading(
+                        piece: pieceType,
+                        level: level,
+                        size: blockSize,
+                        isFlashing: isFlashingRow,
+                      );
+                    } else {
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          border: Border.all(
+                            color: const Color(0xFF111111),
+                            width: 1,
+                          ),
+                        ),
+                      );
+                    }
                   },
                 ),
                 // Current piece
@@ -111,16 +109,23 @@ class GameBoard extends StatelessWidget {
                       children: currentPiece.map((row) {
                         return Row(
                           children: row.map((cell) {
-                            return Container(
+                            // Check if the current piece's row is in a flashing line
+                            final currentRow =
+                                currentY + currentPiece.indexOf(row);
+                            final isFlashingRow =
+                                flashingLines.contains(currentRow) &&
+                                    isFlashing;
+
+                            return SizedBox(
                               width: blockSize,
                               height: blockSize,
-                              decoration: BoxDecoration(
-                                color: cell == 1
-                                    ? currentPieceType.getColor(level)
-                                    : Colors.transparent,
-                              ),
                               child: cell == 1
-                                  ? PieceShading(pieceType: currentPieceType)
+                                  ? PieceShading(
+                                      piece: currentPieceType,
+                                      level: level,
+                                      size: blockSize,
+                                      isFlashing: isFlashingRow,
+                                    )
                                   : null,
                             );
                           }).toList(),

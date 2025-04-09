@@ -56,17 +56,16 @@ class NextPieceBox extends StatelessWidget {
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(nextPiece[i].length, (j) {
-                      return Container(
+                      return SizedBox(
                         width: 12,
                         height: 12,
-                        margin: const EdgeInsets.all(0.5),
-                        decoration: BoxDecoration(
-                          color: nextPiece[i][j] == 1
-                              ? nextPieceType.getColor(level)
-                              : Colors.transparent,
-                        ),
                         child: nextPiece[i][j] == 1
-                            ? PieceShading(pieceType: nextPieceType)
+                            ? PieceShading(
+                                piece: nextPieceType,
+                                level: level,
+                                size: 12,
+                                isFlashing: false,
+                              )
                             : null,
                       );
                     }),

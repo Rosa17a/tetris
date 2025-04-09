@@ -2,91 +2,100 @@ import 'package:flutter/material.dart';
 import 'package:tetris_nes/models/tetromino_piece.dart';
 
 class PieceShading extends StatelessWidget {
-  final TetrominoPiece pieceType;
+  final TetrominoPiece piece;
+  final int level;
+  final double size;
+  final bool isFlashing;
 
   const PieceShading({
     super.key,
-    required this.pieceType,
+    required this.piece,
+    required this.level,
+    this.size = 10,
+    this.isFlashing = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final shadingColors = pieceType.getShadingColors();
-    return Stack(
-      children: [
-        // Top-left corner highlight
-        Positioned(
-          top: 0,
-          left: 0,
-          child: Container(
-            width: 10,
-            height: 10,
-            decoration: const BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment.topLeft,
-                radius: 0.7,
-                colors: [
-                  Colors.white,
-                  Colors.transparent,
+    final style = piece.getVisualStyle();
+    final theme =
+        tetrominoThemes[piece]![level % tetrominoThemes[piece]!.length];
+    final borderSize = size * 0.15;
+    final highlightDotSize = size * 0.15;
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Container(
+        color: Colors.black, // background / gap simulation
+        padding: EdgeInsets.all(borderSize / 4),
+        alignment: Alignment.center,
+        child: isFlashing
+            // When flashing, show a solid white block
+            ? Container(
+                width: size - borderSize,
+                height: size - borderSize,
+                color: Colors.white,
+              )
+            // When not flashing, show the normal shaded block
+            : Stack(
+                children: [
+                  // Inner block with border
+                  Container(
+                    width: size - borderSize,
+                    height: size - borderSize,
+                    decoration: BoxDecoration(
+                      color: theme.fill,
+                      border:
+                          Border.all(color: theme.border, width: borderSize),
+                    ),
+                  ),
+
+                  if (style == BlockVisualStyle.angledHighlight)
+                  Positioned(
+                    top: highlightDotSize,
+                    left: highlightDotSize,
+                    child: ClipPath(
+                      clipper: _TopLeftTriangleClipper(),
+                      child: Container(
+                        width: highlightDotSize * 2,
+                        height: highlightDotSize * 2,
+                        color: Colors.white
+                      ),
+                    ),
+                  ),
+
+                  // Style-specific highlights
+                  if (style == BlockVisualStyle.classicDot || style == BlockVisualStyle.angledHighlight )
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      child: Container(
+                        width: highlightDotSize,
+                        height: highlightDotSize,
+                        color: Colors.white,
+                      ),
+                    ),
                 ],
-                stops: [0.0, 1.0],
               ),
-            ),
-          ),
-        ),
-
-        // Top border (thicker)
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: SizedBox(
-            height: 4,
-            child: ColoredBox(
-              color: shadingColors[0],
-            ),
-          ),
-        ),
-
-        // Left border (thicker)
-        Positioned(
-          top: 0,
-          left: 0,
-          bottom: 0,
-          child: SizedBox(
-            width: 4,
-            child: ColoredBox(
-              color: shadingColors[0],
-            ),
-          ),
-        ),
-
-        // Bottom border
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: SizedBox(
-            height: 1,
-            child: ColoredBox(
-              color: shadingColors[1],
-            ),
-          ),
-        ),
-
-        // Right border
-        Positioned(
-          top: 0,
-          right: 0,
-          bottom: 0,
-          child: SizedBox(
-            width: 1,
-            child: ColoredBox(
-              color: shadingColors[1],
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
+}
+
+class _TopLeftTriangleClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    return Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, size.height / 2)
+      ..lineTo(size.width / 2, size.height / 2)
+      ..lineTo(size.width / 2, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
