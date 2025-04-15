@@ -14,10 +14,9 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
   Timer? _autoRepeatTimer;
   Timer? _speedIncreaseTimer;
   String? _currentAction;
-  int _currentRepeatDelay = 300;
+  int _currentRepeatDelay = 10;
   static const int _autoRepeatDelay = 300;
   static const int _minRepeatDelay = 50;
-  static const int _softDropSpeed = 50;
 
   final TetrominoMatrix tetrominoes = [
     // I piece (Light blue) - straight line
@@ -107,6 +106,7 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
 
     // Timer
     on<TetrisTimerTick>(_onTetrisTimerTick);
+    on<TetrisResetLastScoreChange>(_onTetrisResetLastScoreChange);
   }
 
   @override
@@ -123,9 +123,7 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
   void _startFallTimer() {
     _fallTimer?.cancel();
     _fallTimer = Timer.periodic(
-      Duration(
-          milliseconds:
-              state.isSoftDropping ? _softDropSpeed : state.fallSpeed),
+      Duration(milliseconds: state.isSoftDropping ? 20 : state.fallSpeed),
       (_) {
         if (!state.isPaused && !state.isGameOver) {
           add(TetrisTimerTick());
@@ -219,15 +217,19 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
 
     if (!_checkCollision(
         state.currentX, state.currentY + 1, state.currentPiece)) {
-      int updatedScore = state.score;
       if (state.isSoftDropping) {
-        updatedScore += 1;
+        // Add 1 point for each soft drop movement and show accumulated points
+        final newScore = state.score + 1;
+        final accumulatedPoints = state.lastScoreChange + 1;
+        emit(state.copyWith(
+          currentY: state.currentY + 1,
+          score: newScore,
+          lastScoreChange:
+              accumulatedPoints, // Show accumulated points in real-time
+        ));
+      } else {
+        emit(state.copyWith(currentY: state.currentY + 1));
       }
-
-      emit(state.copyWith(
-        currentY: state.currentY + 1,
-        score: updatedScore,
-      ));
     } else {
       add(TetrisLockPiece());
     }
@@ -334,7 +336,16 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
     if (state.isPaused || state.isGameOver) return;
 
     // Execute action immediately
-    _executeAction(event.action);
+    if (event.action == 'down') {
+      // Enable soft drop and add first point
+      emit(state.copyWith(
+        isSoftDropping: true,
+        lastScoreChange: 1,
+        score: state.score + 1,
+      ));
+    } else {
+      _executeAction(event.action);
+    }
 
     // Set up auto-repeat with progressive speed
     _currentAction = event.action;
@@ -350,7 +361,12 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
         if (!state.isPaused &&
             !state.isGameOver &&
             _currentAction == event.action) {
-          _executeAction(event.action);
+          if (event.action == 'down') {
+            // Add point for each soft drop movement
+            add(TetrisMoveDown());
+          } else {
+            _executeAction(event.action);
+          }
         }
       },
     );
@@ -375,7 +391,12 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
               if (!state.isPaused &&
                   !state.isGameOver &&
                   _currentAction == event.action) {
-                _executeAction(event.action);
+                if (event.action == 'down') {
+                  // Add point for each soft drop movement
+                  add(TetrisMoveDown());
+                } else {
+                  _executeAction(event.action);
+                }
               }
             },
           );
@@ -387,10 +408,15 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
   void _onTetrisStopButtonAction(
       TetrisStopButtonAction event, Emitter<TetrisState> emit) {
     if (_currentAction == event.action) {
+      if (event.action == 'down') {
+        // Disable soft drop
+        emit(state.copyWith(
+          isSoftDropping: false,
+        ));
+      }
       _currentAction = null;
       _autoRepeatTimer?.cancel();
       _speedIncreaseTimer?.cancel();
-      _currentRepeatDelay = _autoRepeatDelay;
     }
   }
 
@@ -457,20 +483,45 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
     ));
     final newNextType = pieceTypes[index];
 
+    // Calculate spawn position (center of the grid)
+    int spawnX = (10 - next[0].length) ~/ 2;
+    int spawnY = 0;
+
+    // Check if the piece can be placed at spawn position
+    bool canSpawn = true;
+    for (int y = 0; y < next.length; y++) {
+      for (int x = 0; x < next[y].length; x++) {
+        if (next[y][x] == 1) {
+          int gridY = spawnY + y;
+          int gridX = spawnX + x;
+
+          // Check if the position is within bounds and not occupied
+          if (gridX < 0 ||
+              gridX >= 10 ||
+              gridY >= 20 ||
+              (gridY >= 0 && state.grid[gridY][gridX] == 1)) {
+            canSpawn = false;
+            break;
+          }
+        }
+      }
+      if (!canSpawn) break;
+    }
+
+    if (!canSpawn) {
+      add(TetrisGameOver());
+      return;
+    }
+
     // Update state with new current and next pieces
     emit(state.copyWith(
       currentPiece: List<List<int>>.from(next),
       currentPieceType: nextType,
       nextPiece: newNext,
       nextPieceType: newNextType,
-      currentX: 3,
-      currentY: 0,
+      currentX: spawnX,
+      currentY: spawnY,
     ));
-
-    // Check for game over
-    if (_checkCollision(state.currentX, state.currentY, state.currentPiece)) {
-      add(TetrisGameOver());
-    }
   }
 
   void _onTetrisLockPiece(TetrisLockPiece event, Emitter<TetrisState> emit) {
@@ -617,9 +668,6 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
       consecutiveTetris: consecutiveTetris,
     ));
 
-    // Restart fall timer with new fall speed
-    _startFallTimer();
-
     // Start flash animation
     _flashTimer?.cancel();
     _flashTimer = Timer.periodic(
@@ -673,6 +721,9 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
         flashingLines: [],
       ));
 
+      // Restart fall timer with current fall speed
+      _startFallTimer();
+
       // Spawn next piece
       add(TetrisSpawnNewPiece());
     }
@@ -680,11 +731,30 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
 
   void _onTetrisToggleSoftDrop(
       TetrisToggleSoftDrop event, Emitter<TetrisState> emit) {
-    emit(state.copyWith(isSoftDropping: event.enabled));
+    if (event.enabled) {
+      // When starting soft drop, reset score change and add first point
+      emit(state.copyWith(
+        isSoftDropping: true,
+        lastScoreChange: 1,
+        score: state.score + 1,
+      ));
+      print('Soft drop enabled: ${state.isSoftDropping}');
+    } else {
+      // When stopping soft drop, just update the flag
+      emit(state.copyWith(
+        isSoftDropping: false,
+      ));
+      print('Soft drop disabled: ${state.isSoftDropping}');
+    }
     _startFallTimer(); // Restart timer with new speed
   }
 
   void _onTetrisTimerTick(TetrisTimerTick event, Emitter<TetrisState> emit) {
     add(TetrisMoveDown());
+  }
+
+  void _onTetrisResetLastScoreChange(
+      TetrisResetLastScoreChange event, Emitter<TetrisState> emit) {
+    emit(state.copyWith(lastScoreChange: 0));
   }
 }

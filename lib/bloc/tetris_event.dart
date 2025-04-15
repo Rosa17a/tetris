@@ -81,3 +81,5 @@ class TetrisToggleSoftDrop extends TetrisEvent {
 
 // Timer events
 class TetrisTimerTick extends TetrisEvent {}
+
+class TetrisResetLastScoreChange extends TetrisEvent {}

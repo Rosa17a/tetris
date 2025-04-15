@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tetris_nes/models/tetromino_piece.dart';
+import 'package:tetris_nes/services/theme_service.dart';
 
 class PieceShading extends StatelessWidget {
   final TetrominoPiece piece;
@@ -18,8 +19,7 @@ class PieceShading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = piece.getVisualStyle();
-    final theme =
-        tetrominoThemes[piece]![level % tetrominoThemes[piece]!.length];
+    final theme = ThemeService().getThemeForPiece(piece, level);
     final borderSize = size * 0.15;
     final highlightDotSize = size * 0.15;
 
@@ -52,21 +52,21 @@ class PieceShading extends StatelessWidget {
                   ),
 
                   if (style == BlockVisualStyle.angledHighlight)
-                  Positioned(
-                    top: highlightDotSize,
-                    left: highlightDotSize,
-                    child: ClipPath(
-                      clipper: _TopLeftTriangleClipper(),
-                      child: Container(
-                        width: highlightDotSize * 2,
-                        height: highlightDotSize * 2,
-                        color: Colors.white
+                    Positioned(
+                      top: highlightDotSize,
+                      left: highlightDotSize,
+                      child: ClipPath(
+                        clipper: _TopLeftTriangleClipper(),
+                        child: Container(
+                            width: highlightDotSize * 2,
+                            height: highlightDotSize * 2,
+                            color: Colors.white),
                       ),
                     ),
-                  ),
 
                   // Style-specific highlights
-                  if (style == BlockVisualStyle.classicDot || style == BlockVisualStyle.angledHighlight )
+                  if (style == BlockVisualStyle.classicDot ||
+                      style == BlockVisualStyle.angledHighlight)
                     Positioned(
                       top: 0,
                       left: 0,

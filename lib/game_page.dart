@@ -11,6 +11,7 @@ import 'package:tetris_nes/widgets/game_board.dart';
 import 'package:tetris_nes/widgets/lines_count_box.dart';
 import 'package:tetris_nes/widgets/level_box.dart';
 import 'package:tetris_nes/widgets/next_piece_box.dart';
+import 'package:tetris_nes/widgets/score_box.dart';
 import 'package:tetris_nes/widgets/speed_box.dart';
 import 'package:tetris_nes/widgets/top_box.dart';
 
@@ -105,11 +106,23 @@ class _TetrisGameState extends State<TetrisGame> {
                           ),
                           BlocBuilder<TetrisBloc, TetrisState>(
                               builder: (context, state) {
-                            return TopBox(
+                            return ScoreBox(
                               text:
                                   'SCORE\n${state.score.toString().padLeft(6, '0')}',
                               height: topBarHeight,
-                              width: totalWidth * 0.32,
+                              width: totalWidth * 0.45,
+                              onAnimationEnd: () {
+                                // Only reset score change if not soft dropping
+                                if (!state.isSoftDropping) {
+                              
+                                  context
+                                      .read<TetrisBloc>()
+                                      .add(TetrisResetLastScoreChange());
+                      
+                                }
+                              },
+                              scoreChange: state.lastScoreChange,
+                              showScoreChange: state.isSoftDropping || state.lastScoreChange>0,
                             );
                           }),
                           BlocBuilder<TetrisBloc, TetrisState>(

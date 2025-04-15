@@ -49,14 +49,10 @@ class ScoreBox extends StatelessWidget {
         ),
         const Spacer(),
         if (showScoreChange)
-          AnimatedOpacity(
-            opacity: 1.0,
-            duration: const Duration(milliseconds: 500),
-            onEnd: onAnimationEnd,
-            child: Text(
+          Text(
             '+$scoreChange',
             style: GoogleFonts.pressStart2p(
-              color:  Colors.white,// make 
+              color: Colors.white,
               fontSize: height * 0.21,
               fontWeight: FontWeight.bold,
               shadows: [
@@ -67,8 +63,7 @@ class ScoreBox extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        )
+          )
       ]),
     );
   }

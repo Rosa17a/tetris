@@ -22,3 +22,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/tetromino_color_themes.json
+    - assets/tetromino_visual_styles.json
+    - assets/color_map.json

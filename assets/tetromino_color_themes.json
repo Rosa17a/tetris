@@ -1,0 +1,87 @@
+{
+  "I": [
+    { "level": 0, "border": "cobaltBlue", "fill": "white" },
+    { "level": 1, "border": "green", "fill": "white" },
+    { "level": 2, "border": "purple", "fill": "white" },
+    { "level": 3, "border": "cobaltBlue", "fill": "white" },
+    { "level": 4, "border": "red", "fill": "white" },
+    { "level": 5, "border": "mint", "fill": "white" },
+    { "level": 6, "border": "brightRed", "fill": "white" },
+    { "level": 7, "border": "indigo", "fill": "white" },
+    { "level": 8, "border": "cobaltBlue", "fill": "white" },
+    { "level": 9, "border": "brightRed", "fill": "white" }
+  ],
+  "O": [
+    { "level": 0, "border": "cobaltBlue", "fill": "white" },
+    { "level": 1, "border": "green", "fill": "white" },
+    { "level": 2, "border": "purple", "fill": "white" },
+    { "level": 3, "border": "cobaltBlue", "fill": "white" },
+    { "level": 4, "border": "red", "fill": "white" },
+    { "level": 5, "border": "mint", "fill": "white" },
+    { "level": 6, "border": "brightRed", "fill": "white" },
+    { "level": 7, "border": "indigo", "fill": "white" },
+    { "level": 8, "border": "cobaltBlue", "fill": "white" },
+    { "level": 9, "border": "brightRed", "fill": "white" }
+  ],
+  "T": [
+    { "level": 0, "border": "cobaltBlue", "fill": "white" },
+    { "level": 1, "border": "green", "fill": "white" },
+    { "level": 2, "border": "purple", "fill": "white" },
+    { "level": 3, "border": "cobaltBlue", "fill": "white" },
+    { "level": 4, "border": "red", "fill": "white" },
+    { "level": 5, "border": "mint", "fill": "white" },
+    { "level": 6, "border": "brightRed", "fill": "white" },
+    { "level": 7, "border": "indigo", "fill": "white" },
+    { "level": 8, "border": "cobaltBlue", "fill": "white" },
+    { "level": 9, "border": "brightRed", "fill": "white" }
+  ],
+  "S": [
+    { "level": 0, "border": "cobaltBlue", "fill": "cobaltBlue" },
+    { "level": 1, "border": "green", "fill": "green" },
+    { "level": 2, "border": "purple", "fill": "purple" },
+    { "level": 3, "border": "cobaltBlue", "fill": "cobaltBlue" },
+    { "level": 4, "border": "red", "fill": "red" },
+    { "level": 5, "border": "mint", "fill": "mint" },
+    { "level": 6, "border": "brightRed", "fill": "brightRed" },
+    { "level": 7, "border": "indigo", "fill": "indigo" },
+    { "level": 8, "border": "cobaltBlue", "fill": "cobaltBlue" },
+    { "level": 9, "border": "brightRed", "fill": "brightRed" }
+  ],
+  "Z": [
+    { "level": 0, "border": "lightBlue", "fill": "lightBlue" },
+    { "level": 1, "border": "lightGreen", "fill": "lightGreen" },
+    { "level": 2, "border": "pink", "fill": "pink" },
+    { "level": 3, "border": "darkGreen", "fill": "darkGreen" },
+    { "level": 4, "border": "mint", "fill": "mint" },
+    { "level": 5, "border": "periwinkle", "fill": "periwinkle" },
+    { "level": 6, "border": "gray", "fill": "gray" },
+    { "level": 6, "border": "burgundy", "fill": "burgundy" },
+    { "level": 7, "border": "indigo", "fill": "indigo" },
+    { "level": 8, "border": "brightRed", "fill": "brightRed" },
+    { "level": 9, "border": "orange", "fill": "orange" }
+  ],
+  "J": [
+    { "level": 0, "border": "cobaltBlue", "fill": "cobaltBlue" },
+    { "level": 1, "border": "green", "fill": "green" },
+    { "level": 2, "border": "purple", "fill": "purple" },
+    { "level": 3, "border": "cobaltBlue", "fill": "cobaltBlue" },
+    { "level": 4, "border": "red", "fill": "red" },
+    { "level": 5, "border": "mint", "fill": "mint" },
+    { "level": 6, "border": "brightRed", "fill": "brightRed" },
+    { "level": 7, "border": "indigo", "fill": "indigo" },
+    { "level": 8, "border": "cobaltBlue", "fill": "cobaltBlue" },
+    { "level": 9, "border": "brightRed", "fill": "brightRed" }
+  ],
+  "L": [
+    { "level": 0, "border": "lightBlue", "fill": "lightBlue" },
+    { "level": 1, "border": "lightGreen", "fill": "lightGreen" },
+    { "level": 2, "border": "pink", "fill": "pink" },
+    { "level": 3, "border": "darkGreen", "fill": "darkGreen" },
+    { "level": 4, "border": "mint", "fill": "mint" },
+    { "level": 5, "border": "periwinkle", "fill": "periwinkle" },
+    { "level": 6, "border": "gray", "fill": "gray" },
+    { "level": 6, "border": "burgundy", "fill": "burgundy" },
+    { "level": 8, "border": "brightRed", "fill": "brightRed" },
+    { "level": 9, "border": "orange", "fill": "orange" }
+  ]
+}
