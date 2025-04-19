@@ -21,6 +21,7 @@ class GameBoard extends StatelessWidget {
   final bool isPaused;
   final bool isGameOver;
   final int score;
+  final int highScore;
   final VoidCallback onResume;
   final VoidCallback onRestart;
 
@@ -41,6 +42,7 @@ class GameBoard extends StatelessWidget {
     required this.isPaused,
     required this.isGameOver,
     required this.score,
+    required this.highScore,
     required this.onResume,
     required this.onRestart,
   });
@@ -141,6 +143,7 @@ class GameBoard extends StatelessWidget {
           if (isGameOver)
             GameOverOverlay(
               score: score,
+              highScore: highScore,
               onRestart: onRestart,
             )
         ],

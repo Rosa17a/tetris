@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:bloc/bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tetris_nes/bloc/tetris_event.dart';
 import 'package:tetris_nes/bloc/tetris_state.dart';
 import 'package:tetris_nes/models/tetromino_piece.dart';
@@ -17,6 +18,8 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
   int _currentRepeatDelay = 10;
   static const int _autoRepeatDelay = 300;
   static const int _minRepeatDelay = 50;
+  static const String _highScoreKey = 'tetris_high_score';
+  SharedPreferences? _prefs;
 
   final TetrominoMatrix tetrominoes = [
     // I piece (Light blue) - straight line
@@ -74,6 +77,9 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
   ];
 
   TetrisBloc() : super(TetrisState.initial()) {
+    // Initialize shared preferences
+    _initPrefs();
+
     // Game initialization
     on<TetrisInitialized>(_onTetrisInitialized);
     on<TetrisGameReset>(_onTetrisGameReset);
@@ -107,6 +113,9 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
     // Timer
     on<TetrisTimerTick>(_onTetrisTimerTick);
     on<TetrisResetLastScoreChange>(_onTetrisResetLastScoreChange);
+
+    // Level selection
+    on<TetrisSetStartingLevel>(_onTetrisSetStartingLevel);
   }
 
   @override
@@ -190,8 +199,42 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
     _autoRepeatTimer?.cancel();
     _speedIncreaseTimer?.cancel();
 
-    emit(TetrisState.initial());
+    // Refetch high score from storage
+    _initPrefs();
+
+    // Reset to initial state with current starting level
+    emit(TetrisState.initial().copyWith(
+      startingLevel: state.startingLevel,
+      level: state.startingLevel,
+      fallSpeed: _calculateFallSpeed(state.startingLevel),
+    ));
     add(TetrisInitialized());
+  }
+
+  int _calculateFallSpeed(int level) {
+    if (level <= 10) {
+      return (800 * pow(0.85, level)).toInt();
+    } else if (level < 29) {
+      if (level >= 19) return 17;
+      if (level >= 16) return 33;
+      if (level >= 13) return 50;
+      return (800 * pow(0.85, 10)).toInt(); // Level 11-12 speed
+    } else {
+      return 1; // Kill screen
+    }
+  }
+
+  void _onTetrisSetStartingLevel(
+      TetrisSetStartingLevel event, Emitter<TetrisState> emit) {
+    final newFallSpeed = _calculateFallSpeed(event.level);
+    emit(state.copyWith(
+      startingLevel: event.level,
+      level: event.level,
+      fallSpeed: newFallSpeed,
+      score: 0,
+      lines: 0,
+      lastScoreChange: 0,
+    ));
   }
 
   void _onTetrisMoveLeft(TetrisMoveLeft event, Emitter<TetrisState> emit) {
@@ -450,6 +493,8 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
   }
 
   void _onTetrisGameOver(TetrisGameOver event, Emitter<TetrisState> emit) {
+    // Update high score before emitting game over
+    _updateHighScore(state.score);
     emit(state.copyWith(isGameOver: true));
 
     // Cancel all timers
@@ -614,13 +659,6 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
   }
 
   void _onTetrisClearLines(TetrisClearLines event, Emitter<TetrisState> emit) {
-    // Start flashing animation
-    emit(state.copyWith(
-      flashingLines: event.linesToClear,
-      isFlashing: true,
-      flashCount: 0,
-    ));
-
     // Update score based on number of lines cleared
     int baseScore = 0;
     int consecutiveTetris = state.consecutiveTetris;
@@ -652,35 +690,114 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
     final lastScoreChange = baseScore * (state.level + 1);
     final newScore = state.score + lastScoreChange;
 
-    // Update lines count and level
+    // Update lines count and level (advances every 10 lines)
     final newLines = state.lines + event.linesToClear.length;
     final newLevel = newLines ~/ 10; // Level up every 10 lines
 
     // Update fall speed based on level (NES speed curve)
-    final newFallSpeed = (800 * pow(0.85, newLevel)).toInt();
+    int newFallSpeed = 800; // Default speed for level 0
+    if (newLevel <= 10) {
+      // Levels 1-10: Speed increases with each level
+      newFallSpeed = (800 * pow(0.85, newLevel)).toInt();
+    } else if (newLevel < 29) {
+      // Levels 11-28: Speed only increases on specific levels
+      final speedLevel = newLevel;
+      if (speedLevel >= 13) {
+        newFallSpeed = 50; // Level 13-15
+      }
+      if (speedLevel >= 16) {
+        newFallSpeed = 33; // Level 16-18
+      }
+      if (speedLevel >= 19) {
+        newFallSpeed = 17; // Level 19-28
+      }
+    } else {
+      // Level 29+: Kill screen (1 frame per cell)
+      newFallSpeed = 1;
+    }
 
-    emit(state.copyWith(
-      score: newScore,
-      lastScoreChange: lastScoreChange,
-      lines: newLines,
-      level: newLevel,
-      fallSpeed: newFallSpeed,
-      consecutiveTetris: consecutiveTetris,
-    ));
+    if (event.linesToClear.length == 4) {
+      // Only start flashing animation for Tetris (4 lines)
+      emit(state.copyWith(
+        flashingLines: event.linesToClear,
+        isFlashing: true,
+        flashCount: 0,
+        score: newScore,
+        lastScoreChange: lastScoreChange,
+        lines: newLines,
+        level: newLevel,
+        fallSpeed: newFallSpeed,
+        consecutiveTetris: consecutiveTetris,
+      ));
 
-    // Start flash animation
-    _flashTimer?.cancel();
-    _flashTimer = Timer.periodic(
-      const Duration(milliseconds: 100),
-      (timer) {
-        add(TetrisFlashLines(!state.isFlashing));
-        add(TetrisIncrementFlashCount());
-      },
-    );
+      // Start flash animation with faster timing
+      _flashTimer?.cancel();
+      _flashTimer = Timer.periodic(
+        const Duration(
+            milliseconds: 50), // Faster flash (50ms instead of 100ms)
+        (timer) {
+          add(TetrisFlashLines(!state.isFlashing));
+          add(TetrisIncrementFlashCount());
+        },
+      );
+    } else {
+      // For 1-3 lines, remove them immediately
+      final List<List<int>> newGrid = List.generate(
+        20,
+        (i) => List<int>.from(state.grid[i]),
+      );
+
+      final List<List<TetrominoPiece?>> newGridPieces = List.generate(
+        20,
+        (i) => List<TetrominoPiece?>.from(state.gridPieces[i]),
+      );
+
+      // Remove completed lines (starting from bottom to maintain indices)
+      for (int row in event.linesToClear.reversed) {
+        newGrid.removeAt(row);
+        newGridPieces.removeAt(row);
+      }
+
+      // Add new empty lines at the top
+      for (int i = 0; i < event.linesToClear.length; i++) {
+        newGrid.insert(0, List.filled(10, 0));
+        newGridPieces.insert(0, List.filled(10, null));
+      }
+
+      emit(state.copyWith(
+        grid: newGrid,
+        gridPieces: newGridPieces,
+        score: newScore,
+        lastScoreChange: lastScoreChange,
+        lines: newLines,
+        level: newLevel,
+        fallSpeed: newFallSpeed,
+        consecutiveTetris: consecutiveTetris,
+      ));
+
+      // Spawn next piece immediately for 1-3 lines
+      add(TetrisSpawnNewPiece());
+    }
   }
 
   void _onTetrisFlashLines(TetrisFlashLines event, Emitter<TetrisState> emit) {
-    emit(state.copyWith(isFlashing: event.isFlashing));
+    // Create a new grid with black lines for flashing
+    final List<List<int>> newGrid = List.generate(
+      20,
+      (i) => List<int>.from(state.grid[i]),
+    );
+
+    // Make the flashing lines black (value 2)
+    for (int row in state.flashingLines) {
+      for (int col = 0; col < 10; col++) {
+        newGrid[row][col] = event.isFlashing ? 2 : 1;
+      }
+    }
+
+    emit(state.copyWith(
+      isFlashing: event.isFlashing,
+      grid: newGrid,
+    ));
   }
 
   void _onTetrisIncrementFlashCount(
@@ -756,5 +873,18 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
   void _onTetrisResetLastScoreChange(
       TetrisResetLastScoreChange event, Emitter<TetrisState> emit) {
     emit(state.copyWith(lastScoreChange: 0));
+  }
+
+  Future<void> _initPrefs() async {
+    _prefs = await SharedPreferences.getInstance();
+    final highScore = _prefs?.getInt(_highScoreKey) ?? 0;
+    emit(state.copyWith(highScore: highScore));
+  }
+
+  Future<void> _updateHighScore(int score) async {
+    if (score > state.highScore) {
+      await _prefs?.setInt(_highScoreKey, score);
+      emit(state.copyWith(highScore: score));
+    }
   }
 }

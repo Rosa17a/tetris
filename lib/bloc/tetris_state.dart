@@ -23,6 +23,8 @@ class TetrisState extends Equatable {
   final bool isFlashing;
   final int flashCount;
   final int consecutiveTetris;
+  final int highScore;
+  final int startingLevel;
 
   const TetrisState({
     required this.grid,
@@ -45,6 +47,8 @@ class TetrisState extends Equatable {
     required this.isFlashing,
     required this.flashCount,
     required this.consecutiveTetris,
+    required this.highScore,
+    required this.startingLevel,
   });
 
   // Initial state of the game
@@ -70,6 +74,8 @@ class TetrisState extends Equatable {
       isFlashing: false,
       flashCount: 0,
       consecutiveTetris: 0,
+      highScore: 0,
+      startingLevel: 0,
     );
   }
 
@@ -95,6 +101,8 @@ class TetrisState extends Equatable {
     bool? isFlashing,
     int? flashCount,
     int? consecutiveTetris,
+    int? highScore,
+    int? startingLevel,
   }) {
     return TetrisState(
       grid: grid ?? this.grid,
@@ -117,6 +125,8 @@ class TetrisState extends Equatable {
       isFlashing: isFlashing ?? this.isFlashing,
       flashCount: flashCount ?? this.flashCount,
       consecutiveTetris: consecutiveTetris ?? this.consecutiveTetris,
+      highScore: highScore ?? this.highScore,
+      startingLevel: startingLevel ?? this.startingLevel,
     );
   }
 
@@ -142,5 +152,7 @@ class TetrisState extends Equatable {
         isFlashing,
         flashCount,
         consecutiveTetris,
+        highScore,
+        startingLevel,
       ];
 }

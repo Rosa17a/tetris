@@ -3,11 +3,13 @@ import 'package:google_fonts/google_fonts.dart';
 
 class GameOverOverlay extends StatelessWidget {
   final int score;
+  final int highScore;
   final VoidCallback onRestart;
 
   const GameOverOverlay({
     super.key,
     required this.score,
+    required this.highScore,
     required this.onRestart,
   });
 
@@ -34,6 +36,14 @@ class GameOverOverlay extends StatelessWidget {
               style: GoogleFonts.pressStart2p(
                 fontSize: 14,
                 color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'HISCORE: ${highScore.toString().padLeft(6, '0')}',
+              style: GoogleFonts.pressStart2p(
+                fontSize: 14,
+                color: const Color(0xFF00FF9F),
               ),
             ),
             const SizedBox(height: 32),

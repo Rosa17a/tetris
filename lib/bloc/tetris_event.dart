@@ -1,8 +1,7 @@
 import 'package:equatable/equatable.dart';
 
-abstract class TetrisEvent extends Equatable {
-  @override
-  List<Object?> get props => [];
+abstract class TetrisEvent {
+  const TetrisEvent();
 }
 
 // Game initialization
@@ -83,3 +82,9 @@ class TetrisToggleSoftDrop extends TetrisEvent {
 class TetrisTimerTick extends TetrisEvent {}
 
 class TetrisResetLastScoreChange extends TetrisEvent {}
+
+class TetrisSetStartingLevel extends TetrisEvent {
+  final int level;
+
+  const TetrisSetStartingLevel(this.level);
+}
