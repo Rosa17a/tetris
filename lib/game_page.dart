@@ -100,7 +100,6 @@ class _TetrisGameState extends State<TetrisGame> {
                       context
                           .read<TetrisBloc>()
                           .add(TetrisSetStartingLevel(level));
-          
                     },
                   );
                 }
@@ -218,6 +217,7 @@ class _TetrisGameState extends State<TetrisGame> {
                                     onRestart: () =>
                                         Navigator.pushReplacementNamed(
                                             context, AppRoutes.levelSelection),
+                                    flashOriginCol: state.flashOriginCol,
                                   );
                                 },
                               ),
@@ -267,6 +267,7 @@ class _TetrisGameState extends State<TetrisGame> {
                           builder: (context, state) {
                             final isEnabled =
                                 !state.isPaused && !state.isGameOver;
+                            final bloc = context.read<TetrisBloc>();
                             return SizedBox(
                               height: buttonSize,
                               child: Row(
@@ -278,14 +279,11 @@ class _TetrisGameState extends State<TetrisGame> {
                                     action: 'left',
                                     size: buttonSize,
                                     isEnabled: isEnabled,
-                                    onTapDown: () => context
-                                        .read<TetrisBloc>()
+                                    onTapDown: () => bloc
                                         .add(TetrisStartButtonAction('left')),
-                                    onTapUp: () => context
-                                        .read<TetrisBloc>()
+                                    onTapUp: () => bloc
                                         .add(TetrisStopButtonAction('left')),
-                                    onTapCancel: () => context
-                                        .read<TetrisBloc>()
+                                    onTapCancel: () => bloc
                                         .add(TetrisStopButtonAction('left')),
                                   ),
                                   ControlButton(
@@ -293,14 +291,11 @@ class _TetrisGameState extends State<TetrisGame> {
                                     action: 'right',
                                     size: buttonSize,
                                     isEnabled: isEnabled,
-                                    onTapDown: () => context
-                                        .read<TetrisBloc>()
+                                    onTapDown: () => bloc
                                         .add(TetrisStartButtonAction('right')),
-                                    onTapUp: () => context
-                                        .read<TetrisBloc>()
+                                    onTapUp: () => bloc
                                         .add(TetrisStopButtonAction('right')),
-                                    onTapCancel: () => context
-                                        .read<TetrisBloc>()
+                                    onTapCancel: () => bloc
                                         .add(TetrisStopButtonAction('right')),
                                   ),
                                   ControlButton(
@@ -308,14 +303,11 @@ class _TetrisGameState extends State<TetrisGame> {
                                     action: 'down',
                                     size: buttonSize,
                                     isEnabled: isEnabled,
-                                    onTapDown: () => context
-                                        .read<TetrisBloc>()
+                                    onTapDown: () => bloc
                                         .add(TetrisStartButtonAction('down')),
-                                    onTapUp: () => context
-                                        .read<TetrisBloc>()
+                                    onTapUp: () => bloc
                                         .add(TetrisStopButtonAction('down')),
-                                    onTapCancel: () => context
-                                        .read<TetrisBloc>()
+                                    onTapCancel: () => bloc
                                         .add(TetrisStopButtonAction('down')),
                                   ),
                                   ControlButton(
@@ -323,9 +315,7 @@ class _TetrisGameState extends State<TetrisGame> {
                                     action: 'rotate',
                                     size: buttonSize,
                                     isEnabled: isEnabled,
-                                    onTapDown: () => context
-                                        .read<TetrisBloc>()
-                                        .add(TetrisRotate()),
+                                    onTapDown: () => bloc.add(TetrisRotate()),
                                   ),
                                 ],
                               ),

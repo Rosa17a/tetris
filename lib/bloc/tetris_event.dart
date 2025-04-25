@@ -101,3 +101,5 @@ class TetrisSaveHighScore extends TetrisEvent {
   @override
   List<Object> get props => [name];
 }
+
+class TetrisClearFlashingLines extends TetrisEvent {}

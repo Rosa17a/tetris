@@ -124,6 +124,8 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
 
     // High score save
     on<TetrisSaveHighScore>(_onTetrisSaveHighScore);
+
+    on<TetrisClearFlashingLines>(_onTetrisClearFlashingLines);
   }
 
   @override
@@ -242,6 +244,7 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
       startingLevel: event.level,
       level: event.level,
       highScore: highScores.first.score,
+      highScores: highScores,
       fallSpeed: newFallSpeed,
       score: 0,
       lines: 0,
@@ -737,6 +740,7 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
         flashingLines: event.linesToClear,
         isFlashing: true,
         flashCount: 0,
+        flashOriginCol: state.currentX + 1,
         score: newScore,
         lastScoreChange: lastScoreChange,
         lines: newLines,
@@ -746,14 +750,30 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
       ));
 
       // Start flash animation with faster timing
+      // _flashTimer?.cancel();
+      // _flashTimer = Timer.periodic(
+      //   const Duration(milliseconds: 50),
+      //   (timer) {
+      //     add(TetrisFlashLines(!state.isFlashing));
+      //     add(TetrisIncrementFlashCount());
+      //   },
+      // );
       _flashTimer?.cancel();
-      _flashTimer = Timer.periodic(
-        const Duration(milliseconds: 50),
-        (timer) {
-          add(TetrisFlashLines(!state.isFlashing));
-          add(TetrisIncrementFlashCount());
-        },
-      );
+      int flashCount = 0;
+      const maxFlashes = 6;
+
+      _flashTimer = Timer.periodic(const Duration(milliseconds: 80), (timer) {
+        flashCount++;
+
+        // Toggle isFlashing to trigger animation
+        add(TetrisFlashLines(
+            flashCount % 2 == 0)); // true, false, true, false...
+
+        if (flashCount >= maxFlashes) {
+          timer.cancel();
+          add(TetrisClearFlashingLines()); // custom event
+        }
+      });
     } else {
       // For 1-3 lines, remove them immediately
       final List<List<int>> newGrid = List.generate(
@@ -972,5 +992,44 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
     }
     await saveHighScores(highScores);
     emit(state.copyWith(isHighScore: false));
+  }
+
+  void _onTetrisClearFlashingLines(
+    TetrisClearFlashingLines event,
+    Emitter<TetrisState> emit,
+  ) {
+    final flashingLines = state.flashingLines;
+    if (flashingLines.isEmpty) return;
+
+    final List<List<int>> newGrid = List.generate(
+      20,
+      (i) => List<int>.from(state.grid[i]),
+    );
+
+    final List<List<TetrominoPiece?>> newGridPieces = List.generate(
+      20,
+      (i) => List<TetrominoPiece?>.from(state.gridPieces[i]),
+    );
+
+    // Remove completed lines
+    for (int row in flashingLines.reversed) {
+      newGrid.removeAt(row);
+      newGridPieces.removeAt(row);
+    }
+
+    // Add new empty lines at the top
+    for (int i = 0; i < flashingLines.length; i++) {
+      newGrid.insert(0, List.filled(10, 0));
+      newGridPieces.insert(0, List.filled(10, null));
+    }
+
+    emit(state.copyWith(
+      grid: newGrid,
+      gridPieces: newGridPieces,
+      flashingLines: [],
+      isFlashing: false,
+    ));
+
+    add(TetrisSpawnNewPiece());
   }
 }

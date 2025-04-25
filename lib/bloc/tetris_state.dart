@@ -23,6 +23,7 @@ class TetrisState extends Equatable {
   final List<int> flashingLines;
   final bool isFlashing;
   final int flashCount;
+  final int? flashOriginCol; // Add this
   final int consecutiveTetris;
   final int highScore;
   final bool isHighScore;
@@ -50,6 +51,7 @@ class TetrisState extends Equatable {
     required this.flashingLines,
     required this.isFlashing,
     required this.flashCount,
+    required this.flashOriginCol,
     required this.consecutiveTetris,
     required this.highScore,
     required this.isHighScore,
@@ -59,15 +61,15 @@ class TetrisState extends Equatable {
 
   // Initial state of the game
   factory TetrisState.initial() {
-    return const TetrisState(
+    return TetrisState(
       startingLevel: 0,
       level: 0,
       fallSpeed: 1000,
       score: 0,
       lines: 0,
       lastScoreChange: 0,
-      grid: [],
-      gridPieces: [],
+      grid: List.generate(20, (_) => List.filled(10, 0)),
+      gridPieces: List.generate(20, (_) => List.filled(10, null)),
       currentPiece: [],
       currentPieceType: TetrominoPiece.I,
       nextPiece: [],
@@ -84,7 +86,8 @@ class TetrisState extends Equatable {
       highScore: 0,
       isHighScore: false,
       pendingHighScoreName: null,
-      highScores: [],
+      highScores: [], 
+      flashOriginCol: null,
     );
   }
 
@@ -115,6 +118,7 @@ class TetrisState extends Equatable {
     bool? isHighScore,
     String? pendingHighScoreName,
     List<ScoreEntry>? highScores,
+    int? flashOriginCol,
   }) {
     return TetrisState(
       startingLevel: startingLevel ?? this.startingLevel,
@@ -141,7 +145,8 @@ class TetrisState extends Equatable {
       highScore: highScore ?? this.highScore,
       isHighScore: isHighScore ?? this.isHighScore,
       pendingHighScoreName: pendingHighScoreName ?? this.pendingHighScoreName,
-      highScores: highScores ?? this.highScores,
+      highScores: highScores ?? this.highScores, 
+      flashOriginCol: flashOriginCol ?? this.flashOriginCol,
     );
   }
 
@@ -172,5 +177,6 @@ class TetrisState extends Equatable {
         isHighScore,
         pendingHighScoreName,
         highScores,
+        flashOriginCol,
       ];
 }

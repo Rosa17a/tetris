@@ -32,6 +32,7 @@ class TopBox extends StatelessWidget {
       ),
       child: isButton
           ? GestureDetector(
+              behavior: HitTestBehavior.opaque,
               onTapDown: (_) => onTap?.call(),
               child: Center(
                 child: Text(

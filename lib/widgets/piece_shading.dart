@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:tetris_nes/models/tetromino_piece.dart';
 import 'package:tetris_nes/services/theme_service.dart';
 
-class PieceShading extends StatelessWidget {
+
+class PieceShading extends StatefulWidget {
   final TetrominoPiece piece;
   final int level;
   final double size;
   final bool isFlashing;
+  final Duration flashDelay;
 
   const PieceShading({
     super.key,
@@ -14,70 +16,109 @@ class PieceShading extends StatelessWidget {
     required this.level,
     this.size = 10,
     this.isFlashing = false,
+    this.flashDelay = Duration.zero,
   });
 
   @override
+  State<PieceShading> createState() => _PieceShadingState();
+}
+
+class _PieceShadingState extends State<PieceShading>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _opacity;
+  bool _started = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 120),
+      vsync: this,
+    );
+
+    _opacity = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.linear),
+    );
+
+    // Start animation after delay (staggered ripple)
+    if (widget.isFlashing) {
+      Future.delayed(widget.flashDelay, () {
+        if (!mounted) return;
+        setState(() => _started = true);
+        _controller.forward();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final style = piece.getVisualStyle();
-    final theme = ThemeService().getThemeForPiece(piece, level);
-    final borderSize = size * 0.15;
-    final highlightDotSize = size * 0.15;
+    if (!_started) {
+      return _buildNormalBlock();
+    }
 
-    return SizedBox(
-      width: size,
-      height: size,
+    return FadeTransition(
+      opacity: _opacity,
       child: Container(
-        color: Colors.black, // background / gap simulation
-        padding: EdgeInsets.all(borderSize / 4),
-        alignment: Alignment.center,
-        child: isFlashing
-            // When flashing, show a solid white block
-            ? Container(
-                width: size - borderSize,
-                height: size - borderSize,
-                color: Colors.white,
-              )
-            // When not flashing, show the normal shaded block
-            : Stack(
-                children: [
-                  // Inner block with border
-                  Container(
-                    width: size - borderSize,
-                    height: size - borderSize,
-                    decoration: BoxDecoration(
-                      color: theme.fill,
-                      border:
-                          Border.all(color: theme.border, width: borderSize),
-                    ),
-                  ),
+        width: widget.size,
+        height: widget.size,
+        color: Colors.white,
+      ),
+    );
+  }
 
-                  if (style == BlockVisualStyle.angledHighlight)
-                    Positioned(
-                      top: highlightDotSize,
-                      left: highlightDotSize,
-                      child: ClipPath(
-                        clipper: _TopLeftTriangleClipper(),
-                        child: Container(
-                            width: highlightDotSize * 2,
-                            height: highlightDotSize * 2,
-                            color: Colors.white),
-                      ),
-                    ),
+  Widget _buildNormalBlock() {
+    final theme = ThemeService().getThemeForPiece(widget.piece, widget.level);
+    final style = widget.piece.getVisualStyle();
+    final borderSize = widget.size * 0.15;
+    final highlightDotSize = widget.size * 0.15;
 
-                  // Style-specific highlights
-                  if (style == BlockVisualStyle.classicDot ||
-                      style == BlockVisualStyle.angledHighlight)
-                    Positioned(
-                      top: 0,
-                      left: 0,
-                      child: Container(
-                        width: highlightDotSize,
-                        height: highlightDotSize,
-                        color: Colors.white,
-                      ),
-                    ),
-                ],
+    return Container(
+      color: Colors.black,
+      padding: EdgeInsets.all(borderSize / 4),
+      alignment: Alignment.center,
+      child: Stack(
+        children: [
+          Container(
+            width: widget.size - borderSize,
+            height: widget.size - borderSize,
+            decoration: BoxDecoration(
+              color: theme.fill,
+              border: Border.all(color: theme.border, width: borderSize),
+            ),
+          ),
+          if (style == BlockVisualStyle.angledHighlight)
+            Positioned(
+              top: highlightDotSize,
+              left: highlightDotSize,
+              child: ClipPath(
+                clipper: _TopLeftTriangleClipper(),
+                child: Container(
+                  width: highlightDotSize * 2,
+                  height: highlightDotSize * 2,
+                  color: Colors.white,
+                ),
               ),
+            ),
+          if (style == BlockVisualStyle.classicDot ||
+              style == BlockVisualStyle.angledHighlight)
+            Positioned(
+              top: 0,
+              left: 0,
+              child: Container(
+                width: highlightDotSize,
+                height: highlightDotSize,
+                color: Colors.white,
+              ),
+            ),
+        ],
       ),
     );
   }

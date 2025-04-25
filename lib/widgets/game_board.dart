@@ -22,6 +22,7 @@ class GameBoard extends StatelessWidget {
   final bool isGameOver;
   final int score;
   final int highScore;
+  final int? flashOriginCol;
   final VoidCallback onResume;
   final VoidCallback onRestart;
 
@@ -45,6 +46,7 @@ class GameBoard extends StatelessWidget {
     required this.highScore,
     required this.onResume,
     required this.onRestart,
+    required this.flashOriginCol,
   });
 
   @override
@@ -61,13 +63,13 @@ class GameBoard extends StatelessWidget {
       ),
       child: Stack(
         children: [
-          // Grid
+          // Entire game content
           SizedBox(
             width: width,
             height: height,
             child: Stack(
               children: [
-                // Grid
+                // 🟦 Grid of locked pieces
                 GridView.builder(
                   physics: const NeverScrollableScrollPhysics(),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -82,12 +84,20 @@ class GameBoard extends StatelessWidget {
                         flashingLines.contains(row) && isFlashing;
                     final pieceType = gridPieces[row][col];
 
+                    final distanceFromOrigin =
+                        (col - (flashOriginCol ?? 4)).abs();
+                    const delayPerStep = 30;
+                    final flashDelay = Duration(
+                      milliseconds: (distanceFromOrigin * delayPerStep).round(),
+                    );
+
                     if (isFilled && pieceType != null) {
                       return PieceShading(
                         piece: pieceType,
                         level: level,
                         size: blockSize,
                         isFlashing: isFlashingRow,
+                        flashDelay: flashDelay,
                       );
                     } else {
                       return Container(
@@ -102,21 +112,20 @@ class GameBoard extends StatelessWidget {
                     }
                   },
                 ),
-                // Current piece
+
+                // 🟨 Current falling piece
                 if (!isGameOver)
                   Positioned(
                     left: currentX * blockSize,
                     top: currentY * blockSize,
                     child: Column(
                       children: currentPiece.map((row) {
+                        final rowIndex = currentPiece.indexOf(row);
                         return Row(
                           children: row.map((cell) {
-                            // Check if the current piece's row is in a flashing line
-                            final currentRow =
-                                currentY + currentPiece.indexOf(row);
+                            final currentRow = currentY + rowIndex;
                             final isFlashingRow =
-                                flashingLines.contains(currentRow) &&
-                                    isFlashing;
+                                flashingLines.contains(currentRow) && isFlashing;
 
                             return SizedBox(
                               width: blockSize,
@@ -127,6 +136,7 @@ class GameBoard extends StatelessWidget {
                                       level: level,
                                       size: blockSize,
                                       isFlashing: isFlashingRow,
+                                      flashDelay: Duration.zero,
                                     )
                                   : null,
                             );
@@ -135,17 +145,32 @@ class GameBoard extends StatelessWidget {
                       }).toList(),
                     ),
                   ),
+
+                // ⚪ Global screen flash overlay (NES-style)
+                if (isFlashing)
+                  AnimatedOpacity(
+                    opacity: 1,
+                    duration: const Duration(milliseconds: 60),
+                    child: Container(
+                      width: width,
+                      height: height,
+                      color: Colors.white.withOpacity(0.85),
+                    ),
+                  ),
               ],
             ),
           ),
-          // Overlays
+
+          // 🟥 Pause overlay
           if (isPaused) PauseOverlay(onResume: onResume),
+
+          // ⛔ Game over overlay
           if (isGameOver)
             GameOverOverlay(
               score: score,
               highScore: highScore,
               onRestart: onRestart,
-            )
+            ),
         ],
       ),
     );
