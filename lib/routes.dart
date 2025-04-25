@@ -16,6 +16,7 @@ class AppRoutes {
           builder: (context) => LevelSelectionScreen(
             onLevelSelected: (level) {
               context.read<TetrisBloc>().add(TetrisSetStartingLevel(level));
+              context.read<TetrisBloc>().add(TetrisInitialized());
               Navigator.pushReplacementNamed(context, AppRoutes.game);
             },
           ),
@@ -29,6 +30,7 @@ class AppRoutes {
           builder: (context) => LevelSelectionScreen(
             onLevelSelected: (level) {
               context.read<TetrisBloc>().add(TetrisSetStartingLevel(level));
+              context.read<TetrisBloc>().add(TetrisInitialized());
               Navigator.pushReplacementNamed(context, AppRoutes.game);
             },
           ),

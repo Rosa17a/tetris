@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:bloc/bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tetris_nes/bloc/tetris_event.dart';
 import 'package:tetris_nes/bloc/tetris_state.dart';
+import 'package:tetris_nes/models/score_entry.dart';
 import 'package:tetris_nes/models/tetromino_piece.dart';
 import 'package:tetris_nes/models/types.dart';
 
@@ -116,6 +118,12 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
 
     // Level selection
     on<TetrisSetStartingLevel>(_onTetrisSetStartingLevel);
+
+    // High score name input
+    on<TetrisSubmitHighScoreName>(_onTetrisSubmitHighScoreName);
+
+    // High score save
+    on<TetrisSaveHighScore>(_onTetrisSaveHighScore);
   }
 
   @override
@@ -225,16 +233,38 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
   }
 
   void _onTetrisSetStartingLevel(
-      TetrisSetStartingLevel event, Emitter<TetrisState> emit) {
+      TetrisSetStartingLevel event, Emitter<TetrisState> emit) async {
+    final highScores = await getHighScores();
+    highScores.sort((a, b) => b.score.compareTo(a.score));
+
     final newFallSpeed = _calculateFallSpeed(event.level);
     emit(state.copyWith(
       startingLevel: event.level,
       level: event.level,
+      highScore: highScores.first.score,
       fallSpeed: newFallSpeed,
       score: 0,
       lines: 0,
       lastScoreChange: 0,
+      grid: List.generate(20, (_) => List.filled(10, 0)),
+      gridPieces: List.generate(20, (_) => List.filled(10, null)),
+      currentPiece: const [],
+      currentPieceType: TetrominoPiece.I,
+      nextPiece: const [],
+      nextPieceType: TetrominoPiece.I,
+      currentX: 0,
+      currentY: 0,
+      isPaused: false,
+      isGameOver: false,
+      isSoftDropping: false,
+      flashingLines: const [],
+      isFlashing: false,
+      flashCount: 0,
+      consecutiveTetris: 0,
     ));
+
+    // Always initialize the game after setting the level
+    add(TetrisInitialized());
   }
 
   void _onTetrisMoveLeft(TetrisMoveLeft event, Emitter<TetrisState> emit) {
@@ -493,9 +523,12 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
   }
 
   void _onTetrisGameOver(TetrisGameOver event, Emitter<TetrisState> emit) {
-    // Update high score before emitting game over
-    _updateHighScore(state.score);
-    emit(state.copyWith(isGameOver: true));
+    final isHighScore = state.score > state.highScore;
+    emit(state.copyWith(
+      isGameOver: true,
+      isHighScore: isHighScore,
+      pendingHighScoreName: isHighScore ? '' : null,
+    ));
 
     // Cancel all timers
     _fallTimer?.cancel();
@@ -692,29 +725,11 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
 
     // Update lines count and level (advances every 10 lines)
     final newLines = state.lines + event.linesToClear.length;
-    final newLevel = newLines ~/ 10; // Level up every 10 lines
+    // Calculate new level based on starting level and lines cleared
+    final newLevel = state.startingLevel + (newLines ~/ 10);
 
     // Update fall speed based on level (NES speed curve)
-    int newFallSpeed = 800; // Default speed for level 0
-    if (newLevel <= 10) {
-      // Levels 1-10: Speed increases with each level
-      newFallSpeed = (800 * pow(0.85, newLevel)).toInt();
-    } else if (newLevel < 29) {
-      // Levels 11-28: Speed only increases on specific levels
-      final speedLevel = newLevel;
-      if (speedLevel >= 13) {
-        newFallSpeed = 50; // Level 13-15
-      }
-      if (speedLevel >= 16) {
-        newFallSpeed = 33; // Level 16-18
-      }
-      if (speedLevel >= 19) {
-        newFallSpeed = 17; // Level 19-28
-      }
-    } else {
-      // Level 29+: Kill screen (1 frame per cell)
-      newFallSpeed = 1;
-    }
+    int newFallSpeed = _calculateFallSpeed(newLevel);
 
     if (event.linesToClear.length == 4) {
       // Only start flashing animation for Tetris (4 lines)
@@ -733,8 +748,7 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
       // Start flash animation with faster timing
       _flashTimer?.cancel();
       _flashTimer = Timer.periodic(
-        const Duration(
-            milliseconds: 50), // Faster flash (50ms instead of 100ms)
+        const Duration(milliseconds: 50),
         (timer) {
           add(TetrisFlashLines(!state.isFlashing));
           add(TetrisIncrementFlashCount());
@@ -855,13 +869,11 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
         lastScoreChange: 1,
         score: state.score + 1,
       ));
-      print('Soft drop enabled: ${state.isSoftDropping}');
     } else {
       // When stopping soft drop, just update the flag
       emit(state.copyWith(
         isSoftDropping: false,
       ));
-      print('Soft drop disabled: ${state.isSoftDropping}');
     }
     _startFallTimer(); // Restart timer with new speed
   }
@@ -878,13 +890,87 @@ class TetrisBloc extends Bloc<TetrisEvent, TetrisState> {
   Future<void> _initPrefs() async {
     _prefs = await SharedPreferences.getInstance();
     final highScore = _prefs?.getInt(_highScoreKey) ?? 0;
-    emit(state.copyWith(highScore: highScore));
+    final highScores = await getHighScores();
+    emit(state.copyWith(
+      highScore: highScore,
+      highScores: highScores,
+    ));
   }
 
-  Future<void> _updateHighScore(int score) async {
-    if (score > state.highScore) {
-      await _prefs?.setInt(_highScoreKey, score);
-      emit(state.copyWith(highScore: score));
+  void _onTetrisSubmitHighScoreName(
+      TetrisSubmitHighScoreName event, Emitter<TetrisState> emit) async {
+    if (event.name.isEmpty) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final highScores = prefs.getStringList('high_scores') ?? [];
+
+    // Add new high score
+    highScores
+        .add('${event.name}|${state.score}|${state.lines}|${state.level}');
+
+    // Sort by score (descending)
+    highScores.sort((a, b) {
+      final scoreA = int.parse(a.split('|')[1]);
+      final scoreB = int.parse(b.split('|')[1]);
+      return scoreB.compareTo(scoreA);
+    });
+
+    // Keep only top 3
+    if (highScores.length > 3) {
+      highScores.removeRange(3, highScores.length);
     }
+
+    await prefs.setStringList('high_scores', highScores);
+
+    emit(state.copyWith(
+      highScore: state.score,
+      isHighScore: false,
+      pendingHighScoreName: null,
+    ));
+  }
+
+  Future<List<ScoreEntry>> getHighScores() async {
+    final prefs = await SharedPreferences.getInstance();
+    final scores = prefs.getStringList('high_scores') ?? [];
+    return scores.map((entry) {
+      try {
+        // Try parsing as JSON first
+        final json = jsonDecode(entry);
+        return ScoreEntry.fromJson(json);
+      } catch (e) {
+        // Fall back to pipe-separated format
+        final parts = entry.split('|');
+        return ScoreEntry(
+          name: parts[0],
+          score: int.parse(parts[1]),
+          lines: int.parse(parts[2]),
+          level: int.parse(parts[3]),
+        );
+      }
+    }).toList();
+  }
+
+  Future<void> saveHighScores(List<ScoreEntry> scores) async {
+    final prefs = await SharedPreferences.getInstance();
+    final scoresJson =
+        scores.map((score) => jsonEncode(score.toJson())).toList();
+    await prefs.setStringList('high_scores', scoresJson);
+  }
+
+  void _onTetrisSaveHighScore(
+      TetrisSaveHighScore event, Emitter<TetrisState> emit) async {
+    final highScores = await getHighScores();
+    highScores.add(ScoreEntry(
+      name: event.name,
+      score: state.score,
+      lines: state.lines,
+      level: state.level,
+    ));
+    highScores.sort((a, b) => b.score.compareTo(a.score));
+    if (highScores.length > 10) {
+      highScores.removeRange(10, highScores.length);
+    }
+    await saveHighScores(highScores);
+    emit(state.copyWith(isHighScore: false));
   }
 }

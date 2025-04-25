@@ -1,21 +1,22 @@
 import 'package:equatable/equatable.dart';
-import 'package:tetris_nes/models/tetromino_piece.dart';
-import 'package:tetris_nes/models/types.dart';
+import '../models/score_entry.dart';
+import '../models/tetromino_piece.dart';
 
 class TetrisState extends Equatable {
-  final GridMatrix grid;
-  final GridPiecesMatrix gridPieces;
-  final PieceMatrix currentPiece;
+  final int startingLevel;
+  final int level;
+  final int fallSpeed;
+  final int score;
+  final int lines;
+  final int lastScoreChange;
+  final List<List<int>> grid;
+  final List<List<TetrominoPiece?>> gridPieces;
+  final List<List<int>> currentPiece;
   final TetrominoPiece currentPieceType;
-  final PieceMatrix nextPiece;
+  final List<List<int>> nextPiece;
   final TetrominoPiece nextPieceType;
   final int currentX;
   final int currentY;
-  final int score;
-  final int lastScoreChange;
-  final int lines;
-  final int level;
-  final int fallSpeed;
   final bool isPaused;
   final bool isGameOver;
   final bool isSoftDropping;
@@ -24,9 +25,17 @@ class TetrisState extends Equatable {
   final int flashCount;
   final int consecutiveTetris;
   final int highScore;
-  final int startingLevel;
+  final bool isHighScore;
+  final String? pendingHighScoreName;
+  final List<ScoreEntry> highScores;
 
   const TetrisState({
+    required this.startingLevel,
+    required this.level,
+    required this.fallSpeed,
+    required this.score,
+    required this.lines,
+    required this.lastScoreChange,
     required this.grid,
     required this.gridPieces,
     required this.currentPiece,
@@ -35,11 +44,6 @@ class TetrisState extends Equatable {
     required this.nextPieceType,
     required this.currentX,
     required this.currentY,
-    required this.score,
-    required this.lastScoreChange,
-    required this.lines,
-    required this.level,
-    required this.fallSpeed,
     required this.isPaused,
     required this.isGameOver,
     required this.isSoftDropping,
@@ -48,52 +52,58 @@ class TetrisState extends Equatable {
     required this.flashCount,
     required this.consecutiveTetris,
     required this.highScore,
-    required this.startingLevel,
+    required this.isHighScore,
+    required this.pendingHighScoreName,
+    required this.highScores,
   });
 
   // Initial state of the game
   factory TetrisState.initial() {
-    return TetrisState(
-      grid: List.generate(20, (_) => List.filled(10, 0)),
-      gridPieces: List.generate(20, (_) => List.filled(10, null)),
-      currentPiece: const [],
+    return const TetrisState(
+      startingLevel: 0,
+      level: 0,
+      fallSpeed: 1000,
+      score: 0,
+      lines: 0,
+      lastScoreChange: 0,
+      grid: [],
+      gridPieces: [],
+      currentPiece: [],
       currentPieceType: TetrominoPiece.I,
-      nextPiece: const [],
+      nextPiece: [],
       nextPieceType: TetrominoPiece.I,
       currentX: 0,
       currentY: 0,
-      score: 0,
-      lastScoreChange: 0,
-      lines: 0,
-      level: 0,
-      fallSpeed: 800,
       isPaused: false,
       isGameOver: false,
       isSoftDropping: false,
-      flashingLines: const [],
+      flashingLines: [],
       isFlashing: false,
       flashCount: 0,
       consecutiveTetris: 0,
       highScore: 0,
-      startingLevel: 0,
+      isHighScore: false,
+      pendingHighScoreName: null,
+      highScores: [],
     );
   }
 
   // Copy with method for immutability
   TetrisState copyWith({
-    GridMatrix? grid,
-    GridPiecesMatrix? gridPieces,
-    PieceMatrix? currentPiece,
+    int? startingLevel,
+    int? level,
+    int? fallSpeed,
+    int? score,
+    int? lines,
+    int? lastScoreChange,
+    List<List<int>>? grid,
+    List<List<TetrominoPiece?>>? gridPieces,
+    List<List<int>>? currentPiece,
     TetrominoPiece? currentPieceType,
-    PieceMatrix? nextPiece,
+    List<List<int>>? nextPiece,
     TetrominoPiece? nextPieceType,
     int? currentX,
     int? currentY,
-    int? score,
-    int? lastScoreChange,
-    int? lines,
-    int? level,
-    int? fallSpeed,
     bool? isPaused,
     bool? isGameOver,
     bool? isSoftDropping,
@@ -102,9 +112,17 @@ class TetrisState extends Equatable {
     int? flashCount,
     int? consecutiveTetris,
     int? highScore,
-    int? startingLevel,
+    bool? isHighScore,
+    String? pendingHighScoreName,
+    List<ScoreEntry>? highScores,
   }) {
     return TetrisState(
+      startingLevel: startingLevel ?? this.startingLevel,
+      level: level ?? this.level,
+      fallSpeed: fallSpeed ?? this.fallSpeed,
+      score: score ?? this.score,
+      lines: lines ?? this.lines,
+      lastScoreChange: lastScoreChange ?? this.lastScoreChange,
       grid: grid ?? this.grid,
       gridPieces: gridPieces ?? this.gridPieces,
       currentPiece: currentPiece ?? this.currentPiece,
@@ -113,11 +131,6 @@ class TetrisState extends Equatable {
       nextPieceType: nextPieceType ?? this.nextPieceType,
       currentX: currentX ?? this.currentX,
       currentY: currentY ?? this.currentY,
-      score: score ?? this.score,
-      lastScoreChange: lastScoreChange ?? this.lastScoreChange,
-      lines: lines ?? this.lines,
-      level: level ?? this.level,
-      fallSpeed: fallSpeed ?? this.fallSpeed,
       isPaused: isPaused ?? this.isPaused,
       isGameOver: isGameOver ?? this.isGameOver,
       isSoftDropping: isSoftDropping ?? this.isSoftDropping,
@@ -126,12 +139,20 @@ class TetrisState extends Equatable {
       flashCount: flashCount ?? this.flashCount,
       consecutiveTetris: consecutiveTetris ?? this.consecutiveTetris,
       highScore: highScore ?? this.highScore,
-      startingLevel: startingLevel ?? this.startingLevel,
+      isHighScore: isHighScore ?? this.isHighScore,
+      pendingHighScoreName: pendingHighScoreName ?? this.pendingHighScoreName,
+      highScores: highScores ?? this.highScores,
     );
   }
 
   @override
   List<Object?> get props => [
+        startingLevel,
+        level,
+        fallSpeed,
+        score,
+        lines,
+        lastScoreChange,
         grid,
         gridPieces,
         currentPiece,
@@ -140,11 +161,6 @@ class TetrisState extends Equatable {
         nextPieceType,
         currentX,
         currentY,
-        score,
-        lastScoreChange,
-        lines,
-        level,
-        fallSpeed,
         isPaused,
         isGameOver,
         isSoftDropping,
@@ -153,6 +169,8 @@ class TetrisState extends Equatable {
         flashCount,
         consecutiveTetris,
         highScore,
-        startingLevel,
+        isHighScore,
+        pendingHighScoreName,
+        highScores,
       ];
 }

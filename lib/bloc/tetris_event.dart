@@ -1,5 +1,3 @@
-import 'package:equatable/equatable.dart';
-
 abstract class TetrisEvent {
   const TetrisEvent();
 }
@@ -87,4 +85,19 @@ class TetrisSetStartingLevel extends TetrisEvent {
   final int level;
 
   const TetrisSetStartingLevel(this.level);
+}
+
+class TetrisSubmitHighScoreName extends TetrisEvent {
+  final String name;
+
+  const TetrisSubmitHighScoreName(this.name);
+}
+
+class TetrisSaveHighScore extends TetrisEvent {
+  final String name;
+
+  const TetrisSaveHighScore(this.name);
+
+  @override
+  List<Object> get props => [name];
 }
