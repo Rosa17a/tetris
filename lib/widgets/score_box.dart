@@ -5,6 +5,7 @@ class ScoreBox extends StatelessWidget {
   final String text;
   final double height;
   final double width;
+  final double fontSize;
   final VoidCallback onAnimationEnd;
   final int scoreChange;
   final bool showScoreChange;
@@ -14,6 +15,7 @@ class ScoreBox extends StatelessWidget {
     required this.text,
     required this.height,
     required this.width,
+    required this.fontSize,
     required this.onAnimationEnd,
     required this.scoreChange,
     required this.showScoreChange,
@@ -24,47 +26,63 @@ class ScoreBox extends StatelessWidget {
     return Container(
       height: height,
       width: width,
-      padding: EdgeInsets.symmetric(
-          horizontal: height * 0.12, vertical: height * 0.08),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: const Color(0xFF00FF9F),
-          width: 2,
+      color: Colors.black,
+      padding: const EdgeInsets.all(4),
+      child: Container(
+        color: const Color(0xFF2D2D2D),
+        padding: const EdgeInsets.all(4),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 4,
+            vertical: 2,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.black,
+            border: Border.all(
+              color: const Color(0xFF88F8FF),
+              width: 2,
+            ),
+          ),
+          child: Row(
+            children: [
+              // Text block (e.g., "SCORE\n000123")
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: text
+                    .split('\n')
+                    .map((line) => Text(
+                          line,
+                          style: GoogleFonts.pressStart2p(
+                            fontSize: fontSize,
+                            color: Colors.white,
+                          ),
+                        ))
+                    .toList(),
+              ),
+              const Spacer(),
+
+              // Animated score change display
+              if (showScoreChange)
+                Text(
+                  '+$scoreChange',
+                  style: GoogleFonts.pressStart2p(
+                    fontSize: fontSize,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.5),
+                        offset: const Offset(2, 2),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
-      child: Row(children: [
-        Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: text
-              .split('\n')
-              .map((line) => Text(
-                    line,
-                    style: GoogleFonts.pressStart2p(
-                      fontSize: height * 0.2,
-                      color: const Color(0xFF00FF9F),
-                    ),
-                  ))
-              .toList(),
-        ),
-        const Spacer(),
-        if (showScoreChange)
-          Text(
-            '+$scoreChange',
-            style: GoogleFonts.pressStart2p(
-              color: Colors.white,
-              fontSize: height * 0.21,
-              fontWeight: FontWeight.bold,
-              shadows: [
-                Shadow(
-                  color: Colors.black.withOpacity(0.5),
-                  offset: const Offset(2, 2),
-                  blurRadius: 4,
-                ),
-              ],
-            ),
-          )
-      ]),
     );
   }
 }

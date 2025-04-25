@@ -65,19 +65,21 @@ class _TetrisGameState extends State<TetrisGame> {
             // Use the smaller of desired or maximum possible width, then adjust for block size
             final initialGameWidth = min(desiredGameWidth, maxGameWidth);
             // Floor dimensions to avoid sub-pixel issues
-            final gameWidth = initialGameWidth.floorToDouble();
-            final gameHeight = (gameWidth * 2).floorToDouble();
+            final gameWidth = initialGameWidth.floorToDouble() + 12;
+            final gameHeight = (gameWidth * 2).floorToDouble() + 12;
             final blockSize = (gameWidth / 10).floorToDouble();
             const borderWidth = 2.0;
 
             // Size other elements relative to block size and floor them
             final buttonSize = (blockSize * 3.5).floorToDouble();
-            final topBarHeight = (blockSize * 2.2).floorToDouble();
+            final topBarHeight = (blockSize * 2.5).floorToDouble();
             final statsWidth = (gameWidth * 0.35).floorToDouble();
 
+            final fontSize = 12.0;
+
             // Gaps (floored)
-            final verticalGap = (blockSize * 0.2).floorToDouble();
-            final horizontalGap = (blockSize * 0.2).floorToDouble();
+            final verticalGap = (blockSize * 0.1).floorToDouble();
+            final horizontalGap = (blockSize * 0.1).floorToDouble();
 
             // Total width including game, stats, border, and gap (floored components)
             final totalWidth =
@@ -122,57 +124,48 @@ class _TetrisGameState extends State<TetrisGame> {
                   );
                 }
 
-                return Container(
-                  width: availableWidth,
-                  height: availableHeight,
-                  color: Colors.black,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Top bar with scores and pause
-                        Container(
-                          width: totalWidth,
+                return Column(
+                  // mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Top bar with scores and pause
+                    BlocBuilder<TetrisBloc, TetrisState>(
+                      builder: (context, state) {
+                        return Container(
+                          // width: totalWidth,
                           height: topBarHeight,
-                          margin: EdgeInsets.only(bottom: verticalGap),
+                          // margin: EdgeInsets.only(bottom: verticalGap),
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              BlocBuilder<TetrisBloc, TetrisState>(
-                                builder: (context, state) {
-                                  return TopBox(
-                                    text:
-                                        'HISCORE\n${state.highScore.toString().padLeft(6, '0')}',
-                                    height: topBarHeight,
-                                    width: totalWidth * 0.32,
-                                  );
-                                },
+                              TopBox(
+                                text:
+                                    'HISCORE\n${state.highScore.toString().padLeft(6, '0')}',
+                                height: topBarHeight,
+                                width: totalWidth * 0.32,
+                                fontSize: fontSize,
                               ),
-                              BlocBuilder<TetrisBloc, TetrisState>(
-                                  builder: (context, state) {
-                                return ScoreBox(
-                                  text:
-                                      'SCORE\n${state.score.toString().padLeft(6, '0')}',
-                                  height: topBarHeight,
-                                  width: totalWidth * 0.45,
-                                  onAnimationEnd: () {
-                                    // Only reset score change if not soft dropping
-                                    if (!state.isSoftDropping) {
-                                      context
-                                          .read<TetrisBloc>()
-                                          .add(TetrisResetLastScoreChange());
-                                    }
-                                  },
-                                  scoreChange: state.lastScoreChange,
-                                  showScoreChange: state.isSoftDropping ||
-                                      state.lastScoreChange > 0,
-                                );
-                              }),
-                              BlocBuilder<TetrisBloc, TetrisState>(
-                                  builder: (context, state) {
-                                return TopBox(
+                              ScoreBox(
+                                text:
+                                    'SCORE\n${state.score.toString().padLeft(6, '0')}',
+                                height: topBarHeight,
+                                width: totalWidth * 0.46,
+                                fontSize: fontSize,
+                                onAnimationEnd: () {
+                                  // Only reset score change if not soft dropping
+                                  if (!state.isSoftDropping) {
+                                    context
+                                        .read<TetrisBloc>()
+                                        .add(TetrisResetLastScoreChange());
+                                  }
+                                },
+                                scoreChange: state.lastScoreChange,
+                                showScoreChange: state.isSoftDropping ||
+                                    state.lastScoreChange > 0,
+                              ),
+                              TopBox(
                                   text: state.isPaused ? '▶' : '❚❚',
                                   height: topBarHeight,
+                                  fontSize: fontSize,
                                   width: totalWidth * 0.2,
                                   isButton: true,
                                   onTap: state.isGameOver
@@ -180,151 +173,150 @@ class _TetrisGameState extends State<TetrisGame> {
                                       : () => context
                                           .read<TetrisBloc>()
                                           .add(TetrisTogglePause()),
-                                );
-                              }),
+                                ),
                             ],
                           ),
-                        ),
-                        // Main game area
-                        SizedBox(
-                          height: gameHeight,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              BlocBuilder<TetrisBloc, TetrisState>(
+                        );
+                      },
+                    ),
+                    // Main game area
+                    SizedBox(
+                      height: gameHeight,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          BlocBuilder<TetrisBloc, TetrisState>(
+                            builder: (context, state) {
+                              return GameBoard(
+                                width: gameWidth,
+                                height: gameHeight,
+                                blockSize: blockSize,
+                                grid: state.grid,
+                                gridPieces: state.gridPieces,
+                                currentPiece: state.currentPiece,
+                                currentPieceType: state.currentPieceType,
+                                currentX: state.currentX,
+                                currentY: state.currentY,
+                                level: state.level,
+                                flashingLines: state.flashingLines,
+                                isFlashing: state.isFlashing,
+                                isPaused: state.isPaused,
+                                isGameOver: state.isGameOver,
+                                score: state.score,
+                                highScore: state.highScore,
+                                onResume: () => context
+                                    .read<TetrisBloc>()
+                                    .add(TetrisTogglePause()),
+                                onRestart: () => Navigator.pushReplacementNamed(
+                                    context, AppRoutes.levelSelection),
+                                flashOriginCol: state.flashOriginCol,
+                              );
+                            },
+                          ),
+                          SizedBox(width: horizontalGap),
+                          // Stats panel
+                          SizedBox(
+                            width: statsWidth,
+                            child: BlocBuilder<TetrisBloc, TetrisState>(
                                 builder: (context, state) {
-                                  return GameBoard(
-                                    width: gameWidth,
-                                    height: gameHeight,
-                                    blockSize: blockSize,
-                                    grid: state.grid,
-                                    gridPieces: state.gridPieces,
-                                    currentPiece: state.currentPiece,
-                                    currentPieceType: state.currentPieceType,
-                                    currentX: state.currentX,
-                                    currentY: state.currentY,
-                                    level: state.level,
-                                    flashingLines: state.flashingLines,
-                                    isFlashing: state.isFlashing,
-                                    isPaused: state.isPaused,
-                                    isGameOver: state.isGameOver,
-                                    score: state.score,
-                                    highScore: state.highScore,
-                                    onResume: () => context
-                                        .read<TetrisBloc>()
-                                        .add(TetrisTogglePause()),
-                                    onRestart: () =>
-                                        Navigator.pushReplacementNamed(
-                                            context, AppRoutes.levelSelection),
-                                    flashOriginCol: state.flashOriginCol,
-                                  );
-                                },
-                              ),
-                              SizedBox(width: horizontalGap),
-                              // Stats panel
-                              SizedBox(
-                                width: statsWidth,
-                                child: BlocBuilder<TetrisBloc, TetrisState>(
-                                    builder: (context, state) {
-                                  return Column(
-                                    children: [
-                                      NextPieceBox(
-                                        height: statsBoxHeight,
-                                        blockSize: blockSize,
-                                        nextPiece: state.nextPiece,
-                                        nextPieceType: state.nextPieceType,
-                                        level: state.level,
-                                      ),
-                                      SizedBox(height: verticalGap),
-                                      LinesCountBox(
-                                        height: statsBoxHeight,
-                                        blockSize: blockSize,
-                                        lines: state.lines,
-                                      ),
-                                      SizedBox(height: verticalGap),
-                                      LevelBox(
-                                        height: statsBoxHeight,
-                                        blockSize: blockSize,
-                                        level: state.level,
-                                      ),
-                                      SizedBox(height: verticalGap),
-                                      SpeedBox(
-                                        height: statsBoxHeight,
-                                        blockSize: blockSize,
-                                        speed: state.fallSpeed,
-                                      ),
-                                    ],
-                                  );
-                                }),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: verticalGap),
-                        // Controls
-                        BlocBuilder<TetrisBloc, TetrisState>(
-                          builder: (context, state) {
-                            final isEnabled =
-                                !state.isPaused && !state.isGameOver;
-                            final bloc = context.read<TetrisBloc>();
-                            return SizedBox(
-                              height: buttonSize,
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
+                              return Column(
                                 children: [
-                                  ControlButton(
-                                    symbol: '←',
-                                    action: 'left',
-                                    size: buttonSize,
-                                    isEnabled: isEnabled,
-                                    onTapDown: () => bloc
-                                        .add(TetrisStartButtonAction('left')),
-                                    onTapUp: () => bloc
-                                        .add(TetrisStopButtonAction('left')),
-                                    onTapCancel: () => bloc
-                                        .add(TetrisStopButtonAction('left')),
+                                  NextPieceBox(
+                                    height: statsBoxHeight*0.95,
+                                    blockSize: blockSize,
+                                    fontSize: fontSize,
+                                    nextPiece: state.nextPiece,
+                                    nextPieceType: state.nextPieceType,
+                                    level: state.level,
                                   ),
-                                  ControlButton(
-                                    symbol: '→',
-                                    action: 'right',
-                                    size: buttonSize,
-                                    isEnabled: isEnabled,
-                                    onTapDown: () => bloc
-                                        .add(TetrisStartButtonAction('right')),
-                                    onTapUp: () => bloc
-                                        .add(TetrisStopButtonAction('right')),
-                                    onTapCancel: () => bloc
-                                        .add(TetrisStopButtonAction('right')),
+                                  SizedBox(height: verticalGap),
+                                  LinesCountBox(
+                                    height: statsBoxHeight / 2,
+                                    blockSize: blockSize,
+                                    fontSize: fontSize,
+                                    lines: state.lines,
                                   ),
-                                  ControlButton(
-                                    symbol: '↓',
-                                    action: 'down',
-                                    size: buttonSize,
-                                    isEnabled: isEnabled,
-                                    onTapDown: () => bloc
-                                        .add(TetrisStartButtonAction('down')),
-                                    onTapUp: () => bloc
-                                        .add(TetrisStopButtonAction('down')),
-                                    onTapCancel: () => bloc
-                                        .add(TetrisStopButtonAction('down')),
+                                  SizedBox(height: verticalGap),
+                                  LevelBox(
+                                    height: statsBoxHeight / 2,
+                                    blockSize: blockSize,
+                                    fontSize: fontSize,
+                                    level: state.level,
                                   ),
-                                  ControlButton(
-                                    symbol: '↻',
-                                    action: 'rotate',
-                                    size: buttonSize,
-                                    isEnabled: isEnabled,
-                                    onTapDown: () => bloc.add(TetrisRotate()),
+                                  SizedBox(height: verticalGap),
+                                  SpeedBox(
+                                    height: statsBoxHeight / 2,
+                                    blockSize: blockSize,
+                                    speed: state.fallSpeed,
+                                    fontSize: fontSize,
                                   ),
                                 ],
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                              );
+                            }),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                    // Controls
+                    BlocBuilder<TetrisBloc, TetrisState>(
+                      builder: (context, state) {
+                        final isEnabled = !state.isPaused && !state.isGameOver;
+                        final bloc = context.read<TetrisBloc>();
+                        return SizedBox(
+                          // height: buttonSize,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              ControlButton(
+                                symbol: '←',
+                                action: 'left',
+                                size: buttonSize,
+                                isEnabled: isEnabled,
+                                onTapDown: () =>
+                                    bloc.add(TetrisStartButtonAction('left')),
+                                onTapUp: () =>
+                                    bloc.add(TetrisStopButtonAction('left')),
+                                onTapCancel: () =>
+                                    bloc.add(TetrisStopButtonAction('left')),
+                              ),
+                              ControlButton(
+                                symbol: '→',
+                                action: 'right',
+                                size: buttonSize,
+                                isEnabled: isEnabled,
+                                onTapDown: () =>
+                                    bloc.add(TetrisStartButtonAction('right')),
+                                onTapUp: () =>
+                                    bloc.add(TetrisStopButtonAction('right')),
+                                onTapCancel: () =>
+                                    bloc.add(TetrisStopButtonAction('right')),
+                              ),
+                              ControlButton(
+                                symbol: '↓',
+                                action: 'down',
+                                size: buttonSize,
+                                isEnabled: isEnabled,
+                                onTapDown: () =>
+                                    bloc.add(TetrisStartButtonAction('down')),
+                                onTapUp: () =>
+                                    bloc.add(TetrisStopButtonAction('down')),
+                                onTapCancel: () =>
+                                    bloc.add(TetrisStopButtonAction('down')),
+                              ),
+                              ControlButton(
+                                symbol: '↻',
+                                action: 'rotate',
+                                size: buttonSize,
+                                isEnabled: isEnabled,
+                                onTapDown: () => bloc.add(TetrisRotate()),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 );
               },
             );

@@ -18,16 +18,16 @@ class GameOverOverlay extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      color: Colors.black.withAlpha(179),
+      color: Colors.black.withOpacity(0.7),
       child: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               'GAME OVER',
               style: GoogleFonts.pressStart2p(
                 fontSize: 20,
-                color: Colors.red,
+                color: Colors.redAccent,
               ),
             ),
             const SizedBox(height: 16),
@@ -43,29 +43,39 @@ class GameOverOverlay extends StatelessWidget {
               'HISCORE: ${highScore.toString().padLeft(6, '0')}',
               style: GoogleFonts.pressStart2p(
                 fontSize: 14,
-                color: const Color(0xFF00FF9F),
+                color: const Color(0xFF88F8FF),
               ),
             ),
             const SizedBox(height: 32),
+
+            // ✅ NES-style border only around the button
             GestureDetector(
               onTapDown: (_) => onRestart(),
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF222222),
-                  border: Border.all(
-                    color: const Color(0xFF00FF00),
-                    width: 2,
-                  ),
-                ),
-                child: Text(
-                  'RESTART',
-                  style: GoogleFonts.pressStart2p(
-                    fontSize: 14,
-                    color: const Color(0xFF00FF00),
+                padding: const EdgeInsets.all(4), // Outer black
+                color: Colors.black,
+                child: Container(
+                  padding: const EdgeInsets.all(4), // Middle gray
+                  color: const Color(0xFF2D2D2D),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A1A),
+                      border: Border.all(
+                        color: const Color(0xFF00FF00), // Green NES style
+                        width: 2,
+                      ),
+                    ),
+                    child: Text(
+                      'RESTART',
+                      style: GoogleFonts.pressStart2p(
+                        fontSize: 14,
+                        color: const Color(0xFF00FF00),
+                      ),
+                    ),
                   ),
                 ),
               ),
